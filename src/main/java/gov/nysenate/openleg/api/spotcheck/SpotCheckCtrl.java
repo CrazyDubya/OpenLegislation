@@ -93,8 +93,8 @@ public class SpotCheckCtrl extends BaseCtrl {
 
         PaginatedList<DeNormSpotCheckMismatch<?>> mismatches = spotCheckReportDao.getMismatches(query, limitOffset);
         List<MismatchSummaryView<?>> mismatchSummaryViews = new ArrayList<>();
-        for (DeNormSpotCheckMismatch mm : mismatches.results()) {
-            mismatchSummaryViews.add(new MismatchSummaryView(mm));
+        for (DeNormSpotCheckMismatch<?> mm : mismatches.results()) {
+            mismatchSummaryViews.add(new MismatchSummaryView<>(mm));
         }
         return ListViewResponse.of(mismatchSummaryViews, mismatches.total(), mismatches.limOff());
     }
@@ -113,7 +113,7 @@ public class SpotCheckCtrl extends BaseCtrl {
     @RequestMapping(value = "/mismatches/{id}", method = RequestMethod.GET)
     public BaseResponse getMismatch(@PathVariable int id) {
         var mismatch = spotCheckReportDao.getMismatch(id);
-        return new ViewObjectResponse<>(new MismatchView(mismatch));
+        return new ViewObjectResponse<>(new MismatchView<>(mismatch));
     }
 
     /**
@@ -140,7 +140,7 @@ public class SpotCheckCtrl extends BaseCtrl {
                 .map(o -> getEnumParameter("characterOptions", o, CharacterOption.class))
                 .collect(Collectors.toSet());
         var htmlDiff = new MismatchHtmlDiff(mismatch, whitespaceOptionEnum, characterOptionEnums);
-        var mismatchHtmlDiffView = new MismatchHtmlDiffView(mismatch, htmlDiff.combinedHtmlDiff(),
+        var mismatchHtmlDiffView = new MismatchHtmlDiffView<>(mismatch, htmlDiff.combinedHtmlDiff(),
                 htmlDiff.referenceHtmlDiff(), htmlDiff.observedHtmlDiff());
         return new ViewObjectResponse<>(mismatchHtmlDiffView);
     }

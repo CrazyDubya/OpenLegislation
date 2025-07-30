@@ -74,4 +74,50 @@ public class SqlBaseDaoTest
         actual = SqlBaseDao.hstoreStringToMap(agendaHstore);
         assertEquals(expected, actual);
     }
+
+    @Test
+    public void testHstoreStringToMapWithCommas() {
+        // Test the FIXME case: values containing commas should be preserved
+        Map<String, String> expected = new HashMap<>();
+        expected.put("committee", "Veterans, Homeland Security and Military Affairs");
+        expected.put("bill_id", "S100");
+        
+        String hstoreWithCommas = "\"committee\"=>\"Veterans, Homeland Security and Military Affairs\", \"bill_id\"=>\"S100\"";
+        Map<String, String> actual = SqlBaseDao.hstoreStringToMap(hstoreWithCommas);
+        assertEquals(expected, actual);
+        
+        // Verify the comma and space are preserved correctly
+        assertEquals("Veterans, Homeland Security and Military Affairs", actual.get("committee"));
+    }
+
+    @Test
+    public void testHstoreStringToMapWithSpecialCharacters() {
+        // Test with various special characters that could cause parsing issues
+        Map<String, String> expected = new HashMap<>();
+        expected.put("title", "A Bill: Reforming Elections & Voting (2024)");
+        expected.put("sponsor", "John O'Brien, Jr.");
+        expected.put("status", "active");
+        
+        String hstoreWithSpecialChars = "\"title\"=>\"A Bill: Reforming Elections & Voting (2024)\", \"sponsor\"=>\"John O'Brien, Jr.\", \"status\"=>\"active\"";
+        Map<String, String> actual = SqlBaseDao.hstoreStringToMap(hstoreWithSpecialChars);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testHstoreStringToMapEmptyAndNull() {
+        // Test empty string
+        Map<String, String> actual = SqlBaseDao.hstoreStringToMap("");
+        assertEquals(0, actual.size());
+        
+        // Test null string
+        actual = SqlBaseDao.hstoreStringToMap(null);
+        assertEquals(0, actual.size());
+        
+        // Test empty values
+        Map<String, String> expected = new HashMap<>();
+        expected.put("key1", "");
+        expected.put("key2", "value");
+        actual = SqlBaseDao.hstoreStringToMap("\"key1\"=>\"\", \"key2\"=>\"value\"");
+        assertEquals(expected, actual);
+    }
 }

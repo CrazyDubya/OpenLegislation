@@ -132,9 +132,7 @@ public abstract class SqlBaseDao {
 
     /**
      * Converts a hstore string into a mapping of the hstore key value pairs.
-     * FIXME This method seems to have the potential to alter hstore values that contain commas
-     * FIXME e.g. "Veterans, Homeland Security and Military Affairs" becomes "Veterans,Homeland Security and Military Affairs"
-     * FIXME       note missing space after comma
+     * This method properly handles quoted values that contain commas, spaces, and special characters.
      * @param hstoreString a String in the format of "print_no"=>"S100", "session_year"=>"2015".
      *                     This string can be retrieved by calling resultSet.getString("hstore")
      *                     on the ResultSet from "SELECT 'print_no=>S100,session_year=>2015'::hstore as hstore"
@@ -142,22 +140,167 @@ public abstract class SqlBaseDao {
      */
     public static Map<String, String> hstoreStringToMap(String hstoreString) {
         Map<String, String> hstoreMap = new HashMap<>();
-        hstoreString = StringUtils.replace(hstoreString, "\"", "");
-        String[] hstoreEntry = hstoreString.contains(",") ? StringUtils.commaDelimitedListToStringArray(hstoreString) : new String[]{hstoreString};
-        String key="";
-        String value="";
-        for (String s : hstoreEntry) {
-            if (s.contains("=>")) {
-                key = StringUtils.trimLeadingWhitespace(StringUtils.split(s, "=>")[0]);
-                value = StringUtils.trimLeadingWhitespace(StringUtils.split(s, "=>")[1]);
-                hstoreMap.put(key, value);
-            } else {
-                hstoreMap.remove(key);
-                value += "," + StringUtils.trimLeadingWhitespace(s);
-                hstoreMap.put(key, value);
+        
+        if (hstoreString == null || hstoreString.trim().isEmpty()) {
+            return hstoreMap;
+        }
+        
+        // Parse hstore string properly handling quoted values and special characters
+        int i = 0;
+        while (i < hstoreString.length()) {
+            // Skip whitespace
+            while (i < hstoreString.length() && Character.isWhitespace(hstoreString.charAt(i))) {
+                i++;
+            }
+            if (i >= hstoreString.length()) break;
+            
+            // Parse key
+            String key = parseHstoreValue(hstoreString, i);
+            i += getValueLength(hstoreString, i);
+            
+            // Skip whitespace and '=>'
+            while (i < hstoreString.length() && (Character.isWhitespace(hstoreString.charAt(i)) || hstoreString.charAt(i) == '=')) {
+                i++;
+            }
+            if (i < hstoreString.length() && hstoreString.charAt(i) == '>') {
+                i++;
+            }
+            while (i < hstoreString.length() && Character.isWhitespace(hstoreString.charAt(i))) {
+                i++;
+            }
+            
+            // Parse value
+            String value = null;
+            if (i < hstoreString.length()) {
+                value = parseHstoreValue(hstoreString, i);
+                i += getValueLength(hstoreString, i);
+            }
+            
+            hstoreMap.put(key, value);
+            
+            // Skip comma and whitespace
+            while (i < hstoreString.length() && (Character.isWhitespace(hstoreString.charAt(i)) || hstoreString.charAt(i) == ',')) {
+                i++;
             }
         }
+        
         return hstoreMap;
+    }
+    
+    /**
+     * Helper method to parse a single hstore value (key or value) handling quotes and escaping.
+     */
+    private static String parseHstoreValue(String hstoreString, int startIndex) {
+        int i = startIndex;
+        
+        // Skip leading whitespace
+        while (i < hstoreString.length() && Character.isWhitespace(hstoreString.charAt(i))) {
+            i++;
+        }
+        
+        if (i >= hstoreString.length()) {
+            return "";
+        }
+        
+        // Check if value is quoted
+        if (hstoreString.charAt(i) == '"') {
+            // Parse quoted value
+            StringBuilder sb = new StringBuilder();
+            i++; // skip opening quote
+            
+            while (i < hstoreString.length()) {
+                char c = hstoreString.charAt(i);
+                if (c == '"') {
+                    // Check if it's an escaped quote
+                    if (i + 1 < hstoreString.length() && hstoreString.charAt(i + 1) == '"') {
+                        sb.append('"');
+                        i += 2;
+                    } else {
+                        // End of quoted string
+                        break;
+                    }
+                } else if (c == '\\' && i + 1 < hstoreString.length()) {
+                    // Handle escaped characters
+                    char nextChar = hstoreString.charAt(i + 1);
+                    sb.append(nextChar);
+                    i += 2;
+                } else {
+                    sb.append(c);
+                    i++;
+                }
+            }
+            return sb.toString();
+        } else {
+            // Parse unquoted value
+            StringBuilder sb = new StringBuilder();
+            while (i < hstoreString.length()) {
+                char c = hstoreString.charAt(i);
+                if (c == ',' || c == '=' || (c == '>' && i > 0 && hstoreString.charAt(i-1) == '=')) {
+                    break;
+                }
+                if (c == '\\' && i + 1 < hstoreString.length()) {
+                    // Handle escaped characters
+                    char nextChar = hstoreString.charAt(i + 1);
+                    sb.append(nextChar);
+                    i += 2;
+                } else {
+                    sb.append(c);
+                    i++;
+                }
+            }
+            return sb.toString().trim();
+        }
+    }
+    
+    /**
+     * Helper method to get the length of a parsed hstore value.
+     */
+    private static int getValueLength(String hstoreString, int startIndex) {
+        int i = startIndex;
+        
+        // Skip leading whitespace
+        while (i < hstoreString.length() && Character.isWhitespace(hstoreString.charAt(i))) {
+            i++;
+        }
+        
+        if (i >= hstoreString.length()) {
+            return i - startIndex;
+        }
+        
+        // Check if value is quoted
+        if (hstoreString.charAt(i) == '"') {
+            i++; // skip opening quote
+            while (i < hstoreString.length()) {
+                char c = hstoreString.charAt(i);
+                if (c == '"') {
+                    if (i + 1 < hstoreString.length() && hstoreString.charAt(i + 1) == '"') {
+                        i += 2; // escaped quote
+                    } else {
+                        i++; // closing quote
+                        break;
+                    }
+                } else if (c == '\\' && i + 1 < hstoreString.length()) {
+                    i += 2; // escaped character
+                } else {
+                    i++;
+                }
+            }
+        } else {
+            // Unquoted value
+            while (i < hstoreString.length()) {
+                char c = hstoreString.charAt(i);
+                if (c == ',' || c == '=' || (c == '>' && i > 0 && hstoreString.charAt(i-1) == '=')) {
+                    break;
+                }
+                if (c == '\\' && i + 1 < hstoreString.length()) {
+                    i += 2; // escaped character
+                } else {
+                    i++;
+                }
+            }
+        }
+        
+        return i - startIndex;
     }
 
     /**

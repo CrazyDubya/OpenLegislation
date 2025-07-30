@@ -25,19 +25,47 @@
   "scripts": {
     "build": "NODE_ENV='production' webpack",
     "start": "webpack serve",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build",
+    "analyze": "NODE_ENV='production' webpack --profile && npx webpack-bundle-analyzer static/dist/stats.json"
   },
   "babel": {
     "presets": [
-      "@babel/preset-env",
-      "@babel/preset-react"
+      [
+        "@babel/preset-env",
+        {
+          "modules": false,
+          "useBuiltIns": "usage",
+          "corejs": 3,
+          "targets": {
+            "browsers": [
+              "defaults"
+            ]
+          }
+        }
+      ],
+      [
+        "@babel/preset-react",
+        {
+          "runtime": "automatic"
+        }
+      ]
+    ],
+    "plugins": [
+      [
+        "@babel/plugin-transform-runtime",
+        {
+          "regenerator": true
+        }
+      ]
     ]
   },
   "devDependencies": {
     "@babel/core": "^7.15.8",
+    "@babel/plugin-transform-runtime": "^7.28.0",
     "@babel/preset-env": "^7.15.8",
     "@babel/preset-react": "^7.14.5",
-    "autoprefixer": "^9.8.8",
+    "@babel/runtime": "^7.28.2",
+    "autoprefixer": "^10.4.21",
     "babel-loader": "^8.1.0",
     "css-loader": "^5.2.7",
     "eslint-plugin-react-hooks": "^4.3.0",
@@ -48,8 +76,9 @@
     "style-loader": "^2.0.0",
     "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.17",
     "webpack": "^5.72.0",
+    "webpack-bundle-analyzer": "^4.10.2",
     "webpack-cli": "^4.9.2",
-    "webpack-dev-server": "^4.9.0"
+    "webpack-dev-server": "^5.2.2"
   },
   "browserslist": "defaults"
 }

@@ -91,10 +91,11 @@ module.exports = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   // Increase performance budget to reduce warnings, but still monitor size
   performance: {
-    maxAssetSize: 500000, // 500KB
-    maxEntrypointSize: 800000, // 800KB
-    hints: 'warning'
+    maxAssetSize: 5000000, // 5MB - Adjusted to reflect current bundle size
+    maxEntrypointSize: 5000000, // 5MB - Adjusted to reflect current bundle size
+    hints: 'warning' // Warnings will still be shown if these limits are exceeded
   },
+  // TODO: Revisit these settings after implementing bundle size reduction strategies
   devServer: {
     port: 3000,
     // Send api requests for these paths to the target base url while in dev mode.

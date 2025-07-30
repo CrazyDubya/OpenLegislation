@@ -83,7 +83,7 @@ public class MismatchQuery {
         return this;
     }
 
-    public MismatchQuery withKeys(SpotCheckContentType contentType, Collection keys) {
+    public MismatchQuery withKeys(SpotCheckContentType contentType, Collection<Object> keys) {
         if (this.keys == null) {
             this.keys = HashMultimap.create();
         }

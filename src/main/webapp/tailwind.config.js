@@ -1,6 +1,5 @@
 module.exports = {
-  mode: 'jit',
-  purge: [
+  content: [
     './WEB-INF/app/**/*.js',
     './WEB-INF/app/**/*.html',
   ],
@@ -28,15 +27,16 @@ module.exports = {
       },
     },
   },
-  variants: {
-    extend: {
-      borderWidth: ['responsive', 'hover', 'focus'],
-      translate: ['responsive', 'hover', 'focus', 'active'],
-      boxShadow: ['disabled'],
-      cursor: ['disabled'],
-      backgroundColor: ['disabled'],
-      opacity: ['disabled']
-    },
-  },
+  safelist: [
+    // Keep commonly used utility classes
+    'transform',
+    'translate-y-0.5',
+    'hover:translate-y-0.5',
+    'shadow-md',
+    'disabled:shadow-none',
+    'disabled:cursor-default',
+    'disabled:opacity-70',
+    'disabled:bg-blue-700',
+  ],
   plugins: [],
 }

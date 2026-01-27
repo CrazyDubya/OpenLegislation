@@ -13,9 +13,9 @@ public class LawDocInfoView implements ViewObject
     protected String lawName;
     protected String locationId;
     protected String title;
-    // TODO: should really be docTypeId.
     protected String docType;
     protected List<LocalDate> publishedDates;
+    // TODO: should really be docTypeId.
     protected String docLevelId;
     protected LocalDate activeDate;
 
